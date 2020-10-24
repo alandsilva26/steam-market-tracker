@@ -1,4 +1,6 @@
 import "package:flutter/material.dart";
+import 'package:provider/provider.dart';
+import 'package:steam_market_tracker/providers/item_manager.dart';
 
 class AddByUrlForm extends StatefulWidget {
   @override
@@ -6,6 +8,34 @@ class AddByUrlForm extends StatefulWidget {
 }
 
 class _AddByUrlFormState extends State<AddByUrlForm> {
+  final _form = GlobalKey<FormState>();
+  final _marketUrlController = TextEditingController();
+  bool _disableSubmit = false;
+  bool _error = false;
+
+  Map<String, dynamic> _authData = {
+    "marketHash": "",
+  };
+
+  void _submit() async {
+    if (!_form.currentState.validate()) {
+      setState(() {
+        _error = true;
+      });
+      return;
+    }
+    _form.currentState.save();
+    setState(() {
+      _disableSubmit = true;
+      _error = false;
+    });
+    // Provider.of<ItemManager>(context).addByUrl(_authData["rawUrl"]);
+    await Provider.of<ItemManager>(context, listen: false)
+        .addManual(_authData["gameId"], _authData["marketHash"]);
+    // Navigator.of(context).pushReplacementNamed(MyHomePage.routeName);
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -17,7 +47,7 @@ class _AddByUrlFormState extends State<AddByUrlForm> {
           ),
         ),
         Form(
-          // key: _formUrl,
+          key: _form,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -51,21 +81,19 @@ class _AddByUrlFormState extends State<AddByUrlForm> {
                   ),
                   textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.done,
-                  // controller: _marketUrlController,
-                  // validator: (value) {
-                  //   if (_authData["marketHash"].toString().isEmpty) {
-                  //     if (value.isEmpty) {
-                  //       return "Please enter item's market url";
-                  //     }
-                  //   }
-                  //   return null;
-                  // },
-                  // onSaved: (value) {
-                  //   _authData['marketUrl'] = value;
-                  // },
-                  // onFieldSubmitted: (value) {
-                  //   _submit();
-                  // },
+                  controller: _marketUrlController,
+                  validator: (value) {
+                    if (value.isEmpty) {
+                      return "Please enter item's market url";
+                    }
+                    return null;
+                  },
+                  onSaved: (value) {
+                    _authData['marketUrl'] = value;
+                  },
+                  onFieldSubmitted: (value) {
+                    _submit();
+                  },
                 ),
               ),
               Container(
@@ -89,15 +117,12 @@ class _AddByUrlFormState extends State<AddByUrlForm> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18.0),
                   ),
-                  // onPressed: _disableSubmit
-                  //     ? null
-                  //     : _authData["marketUrl"].toString().isEmpty ||
-                  //             _authData["marketUrl"].toString() == ""
-                  //         ? null
-                  //         : () {
-                  //             FocusScope.of(context).unfocus();
-                  //             _submit();
-                  //           },
+                  onPressed: _disableSubmit
+                      ? null
+                      : () {
+                          FocusScope.of(context).unfocus();
+                          _submit();
+                        },
                 ),
               ),
             ],

@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import 'package:provider/provider.dart';
 import 'package:steam_market_tracker/providers/item_manager.dart';
+import 'package:steam_market_tracker/widgets/add-by-url-form.dart';
 
 class AddItem extends StatelessWidget {
   static const routeName = "add-item";
@@ -16,6 +17,7 @@ class AddItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AddItemForm(),
+            // AddByUrlForm(),
           ],
         ),
       ),
@@ -195,6 +197,3 @@ class _AddItemFormState extends State<AddItemForm> {
     );
   }
 }
-
-
-
