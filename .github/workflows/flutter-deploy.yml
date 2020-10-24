@@ -20,8 +20,6 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter format --set-exit-if-changed .
-
       # Build apk.
       - run: flutter build apk
       - uses: actions/upload-artifact@v1
