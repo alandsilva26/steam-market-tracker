@@ -26,11 +26,11 @@ jobs:
       - name: Remove File
         uses: JesseTG/rm@v1.0.2
         with:
-          path: build/app/outputs/apk/flutter-apk/app.apk
+          path: build/app/outputs/flutter-apk/app.apk
 
       - name: Create a Release APK
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/apk/flutter-apk/*.apk"
+          artifacts: "build/app/outputs/flutter-apk/*.apk"
           bodyFile: "body.md"
           token: ${{ secrets.TOKEN }}
