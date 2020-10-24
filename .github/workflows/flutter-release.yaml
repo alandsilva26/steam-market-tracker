@@ -23,11 +23,11 @@ jobs:
 
       - run: flutter build apk --release
 
-      - run: rm build/app/outputs/apk/flutter-release/app.apk
+      - run: rm build/app/outputs/apk/flutter-apk/app.apk
 
       - name: Create a Release APK
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/apk/flutter-release/*.apk"
+          artifacts: "build/app/outputs/apk/flutter-apk/*.apk"
           bodyFile: "body.md"
           token: ${{ secrets.TOKEN }}
