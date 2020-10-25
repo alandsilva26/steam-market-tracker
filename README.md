@@ -5,3 +5,14 @@
 </p>
 
 Track indvidual item prices on steam market easily.
+
+<table>
+<tr>
+    <td>
+        <img src="./media/home.png" />
+    </td>
+    <td>
+        <img src="./media/form-with-entry.png" />
+    </td>
+</tr>
+</table>
