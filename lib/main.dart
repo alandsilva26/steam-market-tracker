@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:steam_market_tracker/models/steam_item.dart';
 import 'package:steam_market_tracker/providers/item_manager.dart';
 import 'package:steam_market_tracker/views/add_item.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +69,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> rebuild() async {
     setState(() {});
+  }
+
+  _launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
   }
 
   @override
@@ -217,7 +226,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                                   ),
                                             ),
                                             Text(
-                                              "${steamItem.volume}",
+                                              steamItem.volume != null
+                                                  ? "${steamItem.volume}"
+                                                  : "Could not find volume",
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodyText1,
@@ -227,6 +238,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                       ),
                                     ],
                                   ),
+                                  onTap: () {
+                                    //  https://steamcommunity.com/market/listings/
+                                    String url =
+                                        "https://steamcommunity.com/market/listings/${steamItem.gameId.toString()}/${steamItem.name}";
+                                    _launchURL(url);
+                                  },
                                 ),
                                 // child: Column(
                                 //   crossAxisAlignment:
@@ -252,7 +269,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 // ),
                               );
                             }
-                            return Text("HELLO");
+                            return Text(
+                                "There was an error displaying details.");
                           },
                         ),
                       )

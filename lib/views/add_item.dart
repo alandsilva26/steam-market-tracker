@@ -17,7 +17,7 @@ class AddItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AddItemForm(),
-            // AddByUrlForm(),
+            AddByUrlForm(),
           ],
         ),
       ),

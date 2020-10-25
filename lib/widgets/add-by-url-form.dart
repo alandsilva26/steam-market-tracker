@@ -14,7 +14,7 @@ class _AddByUrlFormState extends State<AddByUrlForm> {
   bool _error = false;
 
   Map<String, dynamic> _authData = {
-    "marketHash": "",
+    "rawUrl": "",
   };
 
   void _submit() async {
@@ -29,9 +29,13 @@ class _AddByUrlFormState extends State<AddByUrlForm> {
       _disableSubmit = true;
       _error = false;
     });
-    // Provider.of<ItemManager>(context).addByUrl(_authData["rawUrl"]);
-    await Provider.of<ItemManager>(context, listen: false)
-        .addManual(_authData["gameId"], _authData["marketHash"]);
+
+    await Provider.of<ItemManager>(
+      context,
+      listen: false,
+    ).addByUrl(_authData["rawUrl"]);
+    // await Provider.of<ItemManager>(context, listen: false)
+    //     .addManual(_authData["gameId"], _authData["marketHash"]);
     // Navigator.of(context).pushReplacementNamed(MyHomePage.routeName);
     Navigator.of(context).pop();
   }
@@ -89,7 +93,7 @@ class _AddByUrlFormState extends State<AddByUrlForm> {
                     return null;
                   },
                   onSaved: (value) {
-                    _authData['marketUrl'] = value;
+                    _authData['rawUrl'] = value;
                   },
                   onFieldSubmitted: (value) {
                     _submit();
@@ -120,7 +124,6 @@ class _AddByUrlFormState extends State<AddByUrlForm> {
                   onPressed: _disableSubmit
                       ? null
                       : () {
-                          FocusScope.of(context).unfocus();
                           _submit();
                         },
                 ),

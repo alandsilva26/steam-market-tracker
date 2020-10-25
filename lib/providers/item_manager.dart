@@ -80,11 +80,14 @@ class ItemManager with ChangeNotifier {
       if (response.statusCode == 200) {
         Map<String, dynamic> extractedData = json.decode(response.body);
 
+        print(extractedData);
+
         if (extractedData["success"] == false) {
           throw "No such item could be found";
         }
 
         extractedData["name"] = formatHashToName(item["marketHash"]);
+        extractedData["gameId"] = formatHashToName(item["gameId"]);
         extractedData["id"] = item["id"];
 
         SteamItem steamItem = SteamItem.fromJson(extractedData);
@@ -138,15 +141,16 @@ class ItemManager with ChangeNotifier {
     notifyListeners();
   }
 
-  void addByUrl(String rawUrl) {
-    List test = url.split("/");
-    String gameId = test[test.length - 2];
-    String marketHash = test[test.length - 1];
-
-    items.add({
-      "gameId": gameId.toString(),
-      "marketHash": marketHash.toString(),
-    });
+  Future<void> addByUrl(String rawUrl) async {
+    var decoded = Uri.decodeFull(rawUrl);
+    List urlArray = decoded.split("/");
+    String gameId = urlArray[urlArray.length - 2];
+    String marketHash = urlArray[urlArray.length - 1];
+    print(marketHash);
+    await addManual(gameId, marketHash);
+    // await addManual(gameId, marketHash)
+    // var uri = 'https://steamcommunity.com/market/listings/730/%E2%98%85%20Huntsman%20Knife%20%7C%20Crimson%20Web%20%28Factory%20New%29';
+    // print(decoded);
   }
 
   Future<void> addManual(String gameId, String marketHash) async {
@@ -156,7 +160,6 @@ class ItemManager with ChangeNotifier {
       "gameId": gameId,
       "marketHash": marketHash,
     });
-    print(items);
     SharedPreferences preferences = await SharedPreferences.getInstance();
     preferences.setString("itemList", json.encode(items));
     notifyListeners();
