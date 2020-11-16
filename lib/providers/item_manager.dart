@@ -16,58 +16,20 @@ class ItemManager with ChangeNotifier {
   List<dynamic> items = [];
 
   ItemManager(List<dynamic> item) {
+    /**
+     * For version above version 1.0.0 transfer all from shared preferences to sqlite
+     * Steps to be followed
+     * Get list of items from shared preferences
+     * Create database file
+     * Create ItemList table with list of class names
+     * Create individual table for each
+     * On initial load display last of each table
+     * IN background load and insert new
+     */
     items = item;
-    // items = [
-    //   {
-    //     "gameId": "440",
-    //     "marketHash": "Mann%20Co.%20Supply%20Crate%20Key",
-    //   },
-    //   {
-    //     "gameId": "730",
-    //     "marketHash": "Shattered%20Web%20Case",
-    //   },
-    //   {
-    //     "gameId": "730",
-    //     "marketHash": "AWP | Atheris (Field-Tested)",
-    //   },
-    //   {
-    //     "gameId": "730",
-    //     "marketHash": "A (Field-Tested)",
-    //   },
-    // ];
   }
 
   List<SteamItem> steamItems = [];
-
-  Future<void> fetchMarketDetails() async {
-    try {
-      steamItems = [];
-      for (Map<String, dynamic> item in items) {
-        http.Response response =
-            await fetchItemResponse(item["gameId"], item["marketHash"]);
-
-        if (response.statusCode == 200) {
-          Map<String, dynamic> extractedData = json.decode(response.body);
-
-          if (extractedData["success"] == false) {
-            continue;
-          }
-
-          extractedData["name"] = formatHashToName(item["marketHash"]);
-
-          SteamItem steamItem = SteamItem.fromJson(extractedData);
-
-          steamItems.add(steamItem);
-        }
-      }
-      return steamItems;
-    } catch (error) {
-      if (error.toString().contains("Socket")) {
-        throw "Please check your internet connection" + error.toString();
-      }
-      throw error;
-    }
-  }
 
   Future<void> fetchIndividualItem(Map<String, dynamic> item) async {
     print(item);
@@ -163,5 +125,35 @@ class ItemManager with ChangeNotifier {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     preferences.setString("itemList", json.encode(items));
     notifyListeners();
+  }
+
+  Future<void> fetchMarketDetails() async {
+    try {
+      steamItems = [];
+      for (Map<String, dynamic> item in items) {
+        http.Response response =
+            await fetchItemResponse(item["gameId"], item["marketHash"]);
+
+        if (response.statusCode == 200) {
+          Map<String, dynamic> extractedData = json.decode(response.body);
+
+          if (extractedData["success"] == false) {
+            continue;
+          }
+
+          extractedData["name"] = formatHashToName(item["marketHash"]);
+
+          SteamItem steamItem = SteamItem.fromJson(extractedData);
+
+          steamItems.add(steamItem);
+        }
+      }
+      return steamItems;
+    } catch (error) {
+      if (error.toString().contains("Socket")) {
+        throw "Please check your internet connection" + error.toString();
+      }
+      throw error;
+    }
   }
 }
