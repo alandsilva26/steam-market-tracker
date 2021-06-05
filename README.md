@@ -4,6 +4,10 @@
     <img src="https://github.com/alandsilva26/steam-market-tracker-flutter/workflows/Flutter%20build%20and%20deploy%20artifacts/badge.svg" alt="Build and Release apk"/>
 </p>
 
+<h1  align="center">
+    <a href="https://github.com/alandsilva26/steam-market-tracker/releases/download/v2.0.0/app.apk">Download</a>
+</h1>
+
 * Track indvidual item prices on steam market easily.
 * Easily add new items via market url
 
