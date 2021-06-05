@@ -18,6 +18,8 @@ dependencies:
   package_info: ^0.4.3+2
   intl: ^0.16.1
   connectivity: ^2.0.1
+  flutter_local_notifications:
+  workmanager:
 
 dev_dependencies:
   flutter_test:

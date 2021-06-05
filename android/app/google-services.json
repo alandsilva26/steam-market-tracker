@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "755042917717",
+    "project_id": "steam-market-tracker-1e413",
+    "storage_bucket": "steam-market-tracker-1e413.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:755042917717:android:e764d6a8799c8f859263dc",
+        "android_client_info": {
+          "package_name": "app.netlify.alan.steam_market_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "755042917717-amplc7rojago3sqg3ah21kjj2erd9pke.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6sjwgfrXupArwS0Y3hs5Wkg5y-o8rUFU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "755042917717-amplc7rojago3sqg3ah21kjj2erd9pke.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

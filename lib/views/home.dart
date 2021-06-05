@@ -10,6 +10,7 @@ import 'package:steam_market_tracker/views/update_screen.dart';
 import 'package:steam_market_tracker/widgets/market_item.dart';
 
 import 'add_item.dart';
+import "../widgets/side_drawer.dart";
 
 class Home extends StatefulWidget {
   static const routeName = "my-home-page";
@@ -23,6 +24,7 @@ class _HomeState extends State<Home> {
       new GlobalKey<RefreshIndicatorState>();
 
   Future<void> rebuild() async {
+    // Provider.of<ItemManager>(context, listen: false).updateItems();
     setState(() {});
   }
 
@@ -68,113 +70,148 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         title: Text("Market Listings"),
         actions: [
-          IconButton(icon: Icon(Icons.refresh), onPressed: rebuild),
+          RefreshButton(),
         ],
       ),
+      drawer: SideDrawer(),
       body: RefreshIndicator(
         onRefresh: rebuild,
         key: _refreshIndicatorKey,
         child: SingleChildScrollView(
           physics: AlwaysScrollableScrollPhysics(),
           child: Container(
-            padding: const EdgeInsets.all(8.0),
-            // decoration: BoxDecoration(
-            // border: Border.all(
-            // color: Colors.red, width: 1, style: BorderStyle.solid),
-            // ),
-            child: Column(
-              children: [
-                Column(
-                  children: Provider.of<ItemManager>(context)
-                      .items
-                      .map(
-                        (item) => FutureBuilder(
-                          future: Provider.of<ItemManager>(context)
-                              .fetchIndividualItem(item),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return Container(
-                                width: MediaQuery.of(context).size.width,
-                                child: Card(
-                                  color: Color.fromRGBO(16, 24, 34, 1),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: <Widget>[
-                                        Text("Loading...",
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyText2),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-
-                            if (snapshot.hasError) {
-                              return Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Container(
-                                    child: ListTile(
-                                      title: Text(
-                                        "ERROR: " + snapshot.error.toString(),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyText1,
-                                      ),
-                                      trailing: IconButton(
-                                        padding: EdgeInsets.all(0),
-                                        icon: Icon(Icons.close),
-                                        color: Colors.white54,
-                                        onPressed: () async {
-                                          await Provider.of<ItemManager>(
-                                            context,
-                                            listen: false,
-                                          ).removeItem(item["id"]);
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-
-                            /**
-                             * If everything is successfull show this
-                             */
-                            if (snapshot.hasData) {
-                              SteamItem steamItem = snapshot.data;
-                              return MarketItem(
-                                steamItem: steamItem,
-                              );
-                            }
-
-                            return Text(
-                              "There was an error displaying details.",
-                            );
-                          },
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  AppBar().preferredSize.height -
+                  MediaQuery.of(context).padding.top,
             ),
+            child: MarketItemList(),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        materialTapTargetSize: MaterialTapTargetSize.padded,
         onPressed: () {
           Navigator.of(context).pushNamed(AddItem.routeName);
         },
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class RefreshButton extends StatefulWidget {
+  @override
+  _RefreshButtonState createState() => _RefreshButtonState();
+}
+
+class _RefreshButtonState extends State<RefreshButton> {
+  bool status = false;
+
+  Future<void> action() async {
+    setState(() {
+      status = true;
+    });
+    setState(() {
+      status = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return status
+        ? Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Center(
+              heightFactor: 1,
+              child: Container(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+          )
+        : IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () async {
+              action();
+            },
+          );
+  }
+}
+
+class MarketItemList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // final itemManager = Provider.of<ItemManager>(context, listen: false);
+    return Column(
+      children: [
+        StreamBuilder(
+          initialData: false,
+          builder: (_, snapshot) {
+            if (snapshot.hasData) {
+              if (snapshot.data) {
+                return LinearProgressIndicator();
+              }
+              return Container();
+            }
+            return Container();
+          },
+          stream: Provider.of<ItemManager>(
+            context,
+            listen: false,
+          ).loadingIndicator.stream,
+        ),
+
+        // print(data == null);
+
+        Visibility(
+          visible: Provider.of<ItemManager>(context).items.length < 1,
+          child: ListTile(
+            title: Text(
+              "Add items to track them",
+              style: Theme.of(context).textTheme.bodyText2,
+            ),
+            subtitle: Text(
+              "No items in list",
+              style: Theme.of(context).textTheme.bodyText1.copyWith(
+                    color: Colors.white54,
+                  ),
+            ),
+          ),
+        ),
+        Column(
+          children: Provider.of<ItemManager>(context).items.map(
+            (item) {
+              return FutureBuilder(
+                future: Provider.of<ItemManager>(context, listen: false)
+                    .fetchIndividualItem(item),
+                builder: (_, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    if (snapshot.hasData) {
+                      return MarketItem(
+                        steamItem: snapshot.data,
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return MarketItem(
+                        steamItem: item,
+                        error: snapshot.error,
+                      );
+                    }
+                  }
+                  return MarketItem(
+                    steamItem: item,
+                  );
+                },
+              );
+            },
+          ).toList(),
+        ),
+      ],
     );
   }
 }

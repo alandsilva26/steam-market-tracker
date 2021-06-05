@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:steam_market_tracker/utils/update_services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/update_services.dart';
@@ -8,6 +7,7 @@ class UpdateScreen extends StatelessWidget {
   static const routeName = "update-screen";
 
   _launchURL(String url) async {
+
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -73,26 +73,28 @@ class UpdateScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                       vertical: 15,
                     ),
-                    child: FlatButton(
-                      onPressed: () async {
-                        print(updateStatus["downloadUrl"]);
-                        await _launchURL(updateStatus["downloadUrl"]);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          "Download",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
+                    child: TextButton(
+                        onPressed: () async {
+                          print(updateStatus["downloadUrl"]);
+                          await _launchURL(updateStatus["downloadUrl"]);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            "Download",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                            ),
                           ),
                         ),
-                      ),
 //                      shape: RoundedRectangleBorder(
 //                        borderRadius: BorderRadius.circular(18.0),
 //                      ),
-                      color: Colors.blue,
-                    ),
+//                       color: Colors.blue,
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                        )),
                   ),
                   // Text(
                   //   "This update includes bug fixes and improvements.",

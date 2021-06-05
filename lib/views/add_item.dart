@@ -57,7 +57,7 @@ class _AddItemFormState extends State<AddItemForm> {
     });
     // Provider.of<ItemManager>(context).addByUrl(_authData["rawUrl"]);
     await Provider.of<ItemManager>(context, listen: false)
-        .addManual(_authData["gameId"], _authData["marketHash"]);
+        .addSteamItem(_authData["gameId"], _authData["marketHash"]);
     // Navigator.of(context).pushReplacementNamed(MyHomePage.routeName);
     Navigator.of(context).pop();
   }
@@ -117,13 +117,14 @@ class _AddItemFormState extends State<AddItemForm> {
             Padding(
               padding: const EdgeInsets.all(8),
               child: Text(
-                  "Enter Exact Market Name (eg. Operation Breakout Weapon Case)"),
+                  "Enter Item Name"),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextFormField(
                 decoration: InputDecoration(
                   labelText: "Market Item Name",
+                  hintText: "Eg. Shattered Web Case",
                   labelStyle: TextStyle(
                     color: Colors.white30,
                   ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import "dart:convert";
 import "dart:core";
 
@@ -6,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import "../models/steam_item.dart";
+import "../models/price_archive.dart";
 
 class ItemManager with ChangeNotifier {
   final String baseUrl =
@@ -13,10 +15,12 @@ class ItemManager with ChangeNotifier {
   final url =
       "https://steamcommunity.com/market/listings/440/Mann%20Co.%20Supply%20Crate%20Key";
 
-  List<dynamic> items = [];
+  List<SteamItem> items = [];
+  List<PriceArchive> priceArchiveList = [];
 
-  ItemManager(List<dynamic> item) {
+  ItemManager(List<String> itemList, List<String> priceArchiveList) {
     /**
+     * NEW:: DO NOT DO THIS AS ENTIRE LOGIC HAS BEEN CHANGED
      * For version above version 1.0.0 transfer all from shared preferences to sqlite
      * Steps to be followed
      * Get list of items from shared preferences
@@ -26,33 +30,115 @@ class ItemManager with ChangeNotifier {
      * On initial load display last of each table
      * IN background load and insert new
      */
-    items = item;
+    print(itemList);
+    if (itemList != null) {
+      if (itemList.length > 0) {
+        List<SteamItem> itemListJson = itemList
+            .map((item) => SteamItem.fromJson(json.decode(item)))
+            .toList();
+        // print(itemListJson);
+        this.items = itemListJson;
+      } else {
+        this.items = [];
+      }
+    } else {
+      this.items = [];
+    }
+
+    if (priceArchiveList != null) {
+      // print(priceArchiveList);
+      if (priceArchiveList.length > 0) {
+        List<PriceArchive> itemListJson = priceArchiveList
+            .map((item) => PriceArchive.fromJson(json.decode(item)))
+            .toList();
+        // print(itemListJson);
+        this.priceArchiveList = itemListJson;
+      } else {
+        this.priceArchiveList = [];
+      }
+    } else {
+      this.priceArchiveList = [];
+    }
   }
 
-  List<SteamItem> steamItems = [];
+  // ignore: close_sinks
+  StreamController<bool> loadingIndicator = StreamController<bool>();
 
-  Future<void> fetchIndividualItem(Map<String, dynamic> item) async {
-    print(item);
-    // SharedPreferences preferences = await SharedPreferences.getInstance();
-    // preferences.remove("itemList");
+  // Stream stream = controller.stream;
+
+  Future<void> updateItems() async {
+    loadingIndicator.add(true);
+
+    // copy of list
+    List<SteamItem> copyItems = items;
+
+    for (SteamItem item in copyItems) {
+      await fetchIndividualItem(item);
+    }
+    print("COMPLETED");
+    loadingIndicator.add(false);
+    notifyListeners();
+  }
+
+  /// Fetch individual items
+  Future<SteamItem> fetchIndividualItem(SteamItem item) async {
+    int index = items.indexOf(item);
+
+    if (index == 0) {
+      loadingIndicator.add(true);
+    }
+
+    print("Fectching details of " + item.name.toString());
+
     try {
-      http.Response response =
-          await fetchItemResponse(item["gameId"], item["marketHash"]);
+      http.Response response = await fetchItemResponse(
+        item.gameId,
+        item.marketHash,
+      );
 
       if (response.statusCode == 200) {
+        // print(response.body);
         Map<String, dynamic> extractedData = json.decode(response.body);
-
-        print(extractedData);
 
         if (extractedData["success"] == false) {
           throw "No such item could be found";
         }
 
-        extractedData["name"] = formatHashToName(item["marketHash"]);
-        extractedData["gameId"] = formatHashToName(item["gameId"]);
-        extractedData["id"] = item["id"];
+        // await Future.delayed(Duration(seconds: index + index + index + 1));
 
-        SteamItem steamItem = SteamItem.fromJson(extractedData);
+        SteamItem steamItem = item;
+        String archivePrice = item.lowestPrice;
+        String archiveVolume = item.volume;
+
+        steamItem.name = formatHashToName(item.marketHash);
+        steamItem.lowestPrice = extractedData["lowest_price"];
+        steamItem.medianPrice = extractedData["median_price"];
+        steamItem.volume = extractedData["volume"];
+        steamItem.archivePrice = archivePrice == "" || archivePrice == null
+            ? steamItem.lowestPrice
+            : archivePrice;
+        steamItem.archiveVolume = archiveVolume == "" || archiveVolume == null
+            ? steamItem.volume
+            : archiveVolume;
+        // print(steamItem.lowestPrice.toString() +
+        //     " " +
+        //     steamItem.archivePrice.toString());
+
+        // Replace and save steam item
+        items[index] = steamItem;
+
+        // Add lowest price archive
+        // addToArchive(
+        //   steamItem.marketHash,
+        //   steamItem.lowestPrice,
+        //   DateTime.now(),
+        // );
+
+        await persistData();
+
+        if (index == items.length - 1) {
+          loadingIndicator.add(false);
+        }
 
         return steamItem;
       } else if (response.statusCode == 500) {
@@ -63,11 +149,61 @@ class ItemManager with ChangeNotifier {
         throw "Unexpected error";
       }
     } catch (error) {
+      print(error.toString());
       if (error.toString().contains("Socket")) {
-        throw "Please check your internet connection" + error.toString();
+        throw "Please check your internet connection";
       }
+
+      if (index == items.length - 1) {
+        loadingIndicator.add(false);
+      }
+
       throw error;
     }
+  }
+
+  Future<void> addToArchive(marketHash, lowestPrice, timeStamp) async {
+    // Find the item from archive
+    PriceArchive item;
+    int index = -1;
+    try {
+      item = this.priceArchiveList.firstWhere(
+            (PriceArchive archive) => archive.marketHash == marketHash,
+          );
+      index = this.priceArchiveList.indexOf(item);
+    } catch (e) {
+      item = PriceArchive(
+        marketHash: marketHash,
+        prices: [],
+      );
+    }
+
+    item.prices.add(
+      new Price(
+        price: lowestPrice,
+        timeStamp: timeStamp,
+      ),
+    );
+
+    if (index != -1) {
+      this.priceArchiveList[index] = item;
+    } else {
+      this.priceArchiveList.add(item);
+    }
+
+    // print(item.prices);
+
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+
+    preferences.setStringList(
+      "priceArchiveList",
+      this
+          .priceArchiveList
+          .map(
+            (PriceArchive archive) => jsonEncode(archive.toMap()),
+          )
+          .toList(),
+    );
   }
 
   String formatHashToName(String hash) {
@@ -75,10 +211,16 @@ class ItemManager with ChangeNotifier {
     return word;
   }
 
+  String formatNameToHash(String name) {
+    String word = name.replaceAll(r" ", "%20");
+    return word;
+  }
+
   Future<dynamic> fetchItemResponse(String gameId, String marketHash) async {
     try {
       var url = baseUrl + "&appid=$gameId&market_hash_name=$marketHash";
 
+      // print(url);
       http.Response response = await http.get(
         url,
         headers: {
@@ -86,7 +228,6 @@ class ItemManager with ChangeNotifier {
           "Content-Type": "application/x-www-form-urlencoded"
         },
       );
-
       return response;
     } catch (error) {
       if (error.toString().contains("Socket")) {
@@ -97,9 +238,10 @@ class ItemManager with ChangeNotifier {
   }
 
   Future<void> removeItem(String id) async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    items.removeWhere((item) => item["id"] == id);
-    preferences.setString("itemList", json.encode(items));
+    items.removeWhere((SteamItem item) => item.id == id);
+
+    await persistData();
+
     notifyListeners();
   }
 
@@ -109,51 +251,72 @@ class ItemManager with ChangeNotifier {
     String gameId = urlArray[urlArray.length - 2];
     String marketHash = urlArray[urlArray.length - 1];
     print(marketHash);
-    await addManual(gameId, marketHash);
-    // await addManual(gameId, marketHash)
-    // var uri = 'https://steamcommunity.com/market/listings/730/%E2%98%85%20Huntsman%20Knife%20%7C%20Crimson%20Web%20%28Factory%20New%29';
-    // print(decoded);
+
+    await addSteamItem(gameId, marketHash);
   }
 
-  Future<void> addManual(String gameId, String marketHash) async {
+  /// Both add by url and add manually use this function in the end...
+  Future<void> addSteamItem(String gameId, String marketHash) async {
+    // Get timestamp
     String id = new DateTime.now().toIso8601String();
-    items.add({
-      "id": id,
-      "gameId": gameId,
-      "marketHash": marketHash,
-    });
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    preferences.setString("itemList", json.encode(items));
+    items.add(
+      SteamItem.fromJson(
+        {
+          "id": id,
+          "gameId": gameId,
+          "marketHash": formatNameToHash(marketHash),
+          "name": formatHashToName(marketHash),
+        },
+      ),
+    );
+
+    // print(SteamItem.fromJson({
+    //   "id": id,
+    //   "gameId": gameId,
+    //   "marketHash": marketHash,
+    // }).marketHash);
+
+    // Save data
+    await persistData();
     notifyListeners();
   }
 
-  Future<void> fetchMarketDetails() async {
-    try {
-      steamItems = [];
-      for (Map<String, dynamic> item in items) {
-        http.Response response =
-            await fetchItemResponse(item["gameId"], item["marketHash"]);
-
-        if (response.statusCode == 200) {
-          Map<String, dynamic> extractedData = json.decode(response.body);
-
-          if (extractedData["success"] == false) {
-            continue;
-          }
-
-          extractedData["name"] = formatHashToName(item["marketHash"]);
-
-          SteamItem steamItem = SteamItem.fromJson(extractedData);
-
-          steamItems.add(steamItem);
-        }
-      }
-      return steamItems;
-    } catch (error) {
-      if (error.toString().contains("Socket")) {
-        throw "Please check your internet connection" + error.toString();
-      }
-      throw error;
-    }
+  Future<void> persistData() async {
+    SharedPreferences preferences = await SharedPreferences.getInstance();
+    // print(items.map((SteamItem item) => json.encode(item.toJson())).toList());
+    preferences.setStringList(
+      "itemList",
+      items.map((SteamItem item) => json.encode(item.toJson())).toList(),
+    );
   }
+
+// Future<void> fetchMarketDetails() async {
+//   try {
+//     steamItems = [];
+//     for (Map<String, dynamic> item in items) {
+//       http.Response response =
+//           await fetchItemResponse(item["gameId"], item["marketHash"]);
+//
+//       if (response.statusCode == 200) {
+//         Map<String, dynamic> extractedData = json.decode(response.body);
+//
+//         if (extractedData["success"] == false) {
+//           continue;
+//         }
+//
+//         extractedData["name"] = formatHashToName(item["marketHash"]);
+//
+//         SteamItem steamItem = SteamItem.fromJson(extractedData);
+//
+//         steamItems.add(steamItem);
+//       }
+//     }
+//     return steamItems;
+//   } catch (error) {
+//     if (error.toString().contains("Socket")) {
+//       throw "Please check your internet connection" + error.toString();
+//     }
+//     throw error;
+//   }
+// }
 }
