@@ -5,7 +5,7 @@
 </p>
 
 <h1  align="center">
-    <a href="https://github.com/alandsilva26/steam-market-tracker/releases">Download</a>
+    <a href="https://github.com/alandsilva26/steam-market-tracker/releases/download/v2.0.0/app.apk">Download</a>
 </h1>
 
 * Track indvidual item prices on steam market easily.
