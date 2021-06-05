@@ -11,7 +11,7 @@
 <table>
 <tr>
     <td>
-        <img src="./media/home.png" />
+        <img src="./media/home-v2.png" />
     </td>
     <td>
         <img src="./media/form-with-entry.png" />
